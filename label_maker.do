@@ -1,6 +1,6 @@
 //30-sec bin during final waking from sleep — you will need to determine this for each person by looking backwards from the max value of timefromepochbegin_tosleeponset_ until the sleep state changes from awake to REM or non-REM and label that last sleep state of REM or non-REM as during final waking from sleep.
 bysort shhs_id: egen final_waking_from_sleep = max((_n)*(awake==0))
-bysort shhs_id: replace final_woken = 1 if _n >= final_waking_from_sleep
+bysort shhs_id: gen final_woken = 1 if _n >= final_waking_from_sleep
 replace final_woken = 0 if missing(final_woken)
 
 //30-sec bin of non-REM sleep (i.e., non_REM==1)
@@ -28,7 +28,8 @@ replace ss=5 if (timefromepochbegin_tosleeponset_ > 0) & (final_woken == 0) & (a
 bysort shhs_id: replace ss = 8 if _n == final_waking_from_sleep-1
 bysort shhs_id: replace ss = 9 if _n == final_waking_from_sleep
 bysort shhs_id: replace ss = 10 if _n == final_waking_from_sleep+1
-bysort shhs_id: replace ss = (11,12) if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
+bysort shhs_id: replace ss = 11 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
 bysort shhs_id: replace ss = 12 if _n >= final_waking_from_sleep+10
 
+drop final_woken
 drop final_waking_from_sleep

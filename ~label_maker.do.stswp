@@ -28,7 +28,8 @@ replace ss=5 if (timefromepochbegin_tosleeponset_ > 0) & (final_woken == 0) & (a
 bysort shhs_id: replace ss = 8 if _n == final_waking_from_sleep-1
 bysort shhs_id: replace ss = 9 if _n == final_waking_from_sleep
 bysort shhs_id: replace ss = 10 if _n == final_waking_from_sleep+1
-bysort shhs_id: replace ss = (11,12) if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
+bysort shhs_id: replace ss = 11 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
 bysort shhs_id: replace ss = 12 if _n >= final_waking_from_sleep+10
 
+drop final_woken
 drop final_waking_from_sleep
