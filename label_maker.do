@@ -4,7 +4,7 @@ bysort shhs_id: gen final_woken = 1 if _n >= final_waking_from_sleep
 replace final_woken = 0 if missing(final_woken)
 
 //30-sec bin of non-REM sleep (i.e., non_REM==1)
-replace label_one=6 if (non_REM==1)
+gen label_one=6 if (non_REM==1)
 
 //30-sec bin of REM sleep (i.e., REM==1)
 replace label_one=7 if (REM==1)
@@ -29,7 +29,7 @@ bysort shhs_id: replace label_one = 8 if _n == final_waking_from_sleep-1
 bysort shhs_id: replace label_one = 9 if _n == final_waking_from_sleep
 bysort shhs_id: replace label_one = 10 if _n == final_waking_from_sleep+1
 bysort shhs_id: replace label_one = 11 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
-bysort shhs_id: replace label_two = 12 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
+bysort shhs_id: gen label_two = 12 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
 bysort shhs_id: replace label_one = 12 if _n >= final_waking_from_sleep+10
 
 drop final_woken
