@@ -1,5 +1,0 @@
-egen user_rank = group(shhs_id)
-
-mlogit label_one ea predictor2 if user_rank <= 10
-
-drop user_rank

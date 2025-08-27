@@ -23,8 +23,8 @@ gen strL window_10_str = ""
 by shhs_id: replace window_10_str = "[" + string_label + "," + string_label[_n+1] + "," + string_label[_n+2] + "," + string_label[_n+3] + "," + string_label[_n+4] + "," + string_label[_n+5] + "," + string_label[_n+6] + "," + string_label[_n+7] + "," + string_label[_n+8] + "," + string_label[_n+9] + "]" ///
     if _n <= _N-9
 
-encode window_10_str,  generate(window_10_sleepstate)
-*egen window_10_heartrate = generate(window_10_str)
+encode window_10_str = generate(window_10_sleepstate)
+*egen window_10_heartrate, generate(window_10_str)
 drop window_10_str 
 
 drop string_label
