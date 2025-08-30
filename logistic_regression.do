@@ -1,90 +1,76 @@
+/*
+logistic_regression.do
+Mira Welner
+August 2025
+This .do file calculates the relevance of various data points to whether a patient is asleep, in REM sleep, or non-REM sleep. It does this
+via taking the logistic regression and recording the coefficient and standard error.
+*/
+
+
 levelsof ID, local(idlist)
-capture gen heart_rate_coeff = .
-capture gen heart_rate_se = .
 
-capture gen sdnn_coeff = .
-capture gen sdnn_se = .
+*create function to calculate the logistic regression
+program define use_lr
+    args dependent_variable independent_variable id use_perc_kept
+	
+	*create column names depending on the variables
+	local coeff_column_name "`dependent_variable'_`independent_variable'_coeff"
+	local se_column_name "`dependent_variable'_`independent_variable'_se"
 
-capture gen meannn_msec_coeff = .
-capture gen meannn_msec_se = .
+	capture gen `coeff_column_name' = .
+	capture gen `se_column_name' = .
 
-capture gen rmssd_msec_coeff = .
-capture gen rmssd_msec_se = .
+	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
+	if `use_perc_kept' == 1 {
+		    stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
+	}
+	else {
+			stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
+	}
+	
+	*the e(b) gets the coefficient matrix. This technically contains the se but it looks like the se is deleted after creation
+	*so, the e(V) matrix get the variance covariance matrix, which is used toget the se
+	matrix b = e(b)
+	matrix V = e(V)
+	
+    capture matrix tmp = b[1,"`dependent_variable':`independent_variable'"]
+	if _rc==0 {
+	    replace `coeff_column_name' = tmp[1,1] if ID==`id'
+	}
+    capture matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
+	if _rc==0 {
+	    replace `se_column_name' = sqrt(tmp[1,1]) if ID==`id'
+	}
+end
 
-*run through all ID
-*foreach i of local idlist {
-foreach i of numlist 1,2,3,4,5 {
-	stepwise, pr(0.2) pe(0.1): ///
-	logit awake heart_rate if perc_PVC<1&ID==`i' & label_one>4 & label_one<8
+*these were the independent variables listed in the email which were not supposed to be filtered by perc_kept>85. There was no rmssd_msec so I used rmssd instead, and there was no rr_en_m4w50r5 so I left it out
+local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox rr_en_m4w30r5 rr_en_pow_m4w30r5 qrs_area rs_amplitude_abs
 
-	matrix coeff_matrix = e(b)
-	matrix covariance_matrix = e(V)
+*these were the independent variables listed in the email which were supposed to be filtered by perc_kept>85. qt_en_m4w50r5 was left out because it was not found in the dataset
+local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_pow_m4w30r5 t_area qt_area t_amplitude
+
+*iterate through all indpenedent variables for awake, rem, and non-REM
+foreach i of local idlist {
+	foreach iv of local ind_vars_not_use_perc_kept {
+		use_lr REM `iv' `i' 0
+	} 
+	foreach iv of local ind_vars_use_perc_kept {
+		use_lr REM `iv' `i' 1
+	} 
 	
-	* if heart_rate hasn't been removed due to lack of significance, get data
-	capture matrix tmp = coeff_matrix[1,"awake:heart_rate"]
-	if _rc==0 {
-	    scalar coef = tmp[1,1]
-	    replace heart_rate_coeff = tmp[1,1] if ID==`i'
-	}
-	capture matrix tmp = covariance_matrix["awake:heart_rate","awake:heart_rate"]
-	if _rc==0 {
-	    scalar coef = sqrt(tmp[1,1])
-	    replace heart_rate_se = sqrt(tmp[1,1]) if ID==`i'
-	}
-	
-	*sdnn
-	stepwise, pr(0.2) pe(0.1): ///
-	logit awake sdnn if perc_PVC<1&ID==`i' & label_one>4 & label_one<8
-	
-	matrix coeff_matrix = e(b)
-	matrix covariance_matrix = e(V)
-	
-	capture matrix tmp = coeff_matrix[1,"awake:sdnn"]
-	if _rc==0 {
-	    scalar coef = tmp[1,1]
-	    replace sdnn_coeff = tmp[1,1] if ID==`i'
-	}
-	capture matrix tmp = covariance_matrix["awake:sdnn","awake:sdnn"]
-	if _rc==0 {
-	    scalar coef = sqrt(tmp[1,1])
-	    replace sdnn_se = sqrt(tmp[1,1]) if ID==`i'
-	}
-	
-	*meannn_msec
-	stepwise, pr(0.2) pe(0.1): ///
-	logit awake meannn_msec if perc_PVC<1&ID==`i' & label_one>4 & label_one<8
-	
-	matrix coeff_matrix = e(b)
-	matrix covariance_matrix = e(V)
-	
-	capture matrix tmp = coeff_matrix[1,"awake:meannn_msec"]
-	if _rc==0 {
-	    scalar coef = tmp[1,1]
-	    replace meannn_msec_coeff = tmp[1,1] if ID==`i'
-	}
-	capture matrix tmp = covariance_matrix["awake:meannn_msec","awake:meannn_msec"]
-	if _rc==0 {
-	    scalar coef = sqrt(tmp[1,1])
-	    replace meannn_msec_se = sqrt(tmp[1,1]) if ID==`i'
-	}
-	
-	*rmssd
-	stepwise, pr(0.2) pe(0.1): ///
-	logit awake rmssd if perc_PVC<1&ID==`i' & label_one>4 & label_one<8
-	
-	matrix coeff_matrix = e(b)
-	matrix covariance_matrix = e(V)
-	
-	capture matrix tmp = coeff_matrix[1,"awake:rmssd"]
-	if _rc==0 {
-	    scalar coef = tmp[1,1]
-	    replace rmssd_msec_coeff = tmp[1,1] if ID==`i'
-	}
-	capture matrix tmp = covariance_matrix["awake:rmssd","awake:rmssd"]
-	if _rc==0 {
-	    scalar coef = sqrt(tmp[1,1])
-	    replace rmssd_msec_se = sqrt(tmp[1,1]) if ID==`i'
-	}
-	
-    *
+	foreach iv of local ind_vars_not_use_perc_kept {
+		use_lr non_REM `iv' `i' 0
+	} 
+	foreach iv of local ind_vars_use_perc_kept {
+		use_lr non_REM `iv' `i' 1
+	} 
+
+	foreach iv of local ind_vars_not_use_perc_kept {
+		use_lr awake `iv' `i' 0
+	} 
+	foreach iv of local ind_vars_use_perc_kept {
+		use_lr awake `iv' `i' 1
+	} 
+
 }
+program drop use_lr
