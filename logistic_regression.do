@@ -20,10 +20,10 @@ program define use_lr
 
 	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
 	if `use_perc_kept' == 1 {
-		    quiet stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
+		    logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
 	}
 	else {
-			quiet stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
+			logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
 	}
 	
 	*the e(b) gets the coefficient matrix. This technically contains the se but it looks like the se is deleted after creation
@@ -31,11 +31,13 @@ program define use_lr
 	matrix b = e(b)
 	matrix V = e(V)
 		
-    capture matrix tmp = b[1,"`dependent_variable':`independent_variable'"]
+    matrix tmp = b[1,"`dependent_variable':`independent_variable'"]
 	capture gen order_var = .
 	bysort ID: replace order_var = _n
 	
 	if _rc==0 {
+		scalar x = el(tmp, 1,1)
+		display x
 		if "`dependent_variable'" == "awake"{
 			replace `coeff_column_name' = tmp[1,1] if ID==`id' & order_var == 1
 		}
@@ -47,8 +49,10 @@ program define use_lr
 			replace `coeff_column_name' = tmp[1,1] if ID==`id' & order_var == 3
 		}
 	}
-    capture matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
+    matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
 	if _rc==0 {
+		scalar x = el(tmp, 1,1)
+		display x
 		if "`dependent_variable'" == "awake"{
 			replace `se_column_name' = sqrt(tmp[1,1]) if ID==`id' & order_var == 1
 		}
@@ -69,7 +73,14 @@ local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow 
 local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_pow_m4w30r5 t_area qt_area t_amplitude
 
 *iterate through all indpenedent variables for awake, rem, and non-REM
-foreach i of numlist 1 2 {
+forvalues i = 1/3 {
+	foreach iv of local ind_vars_not_use_perc_kept {
+		use_lr awake `iv' `i' 0
+	} 
+	foreach iv of local ind_vars_use_perc_kept {
+		use_lr awake `iv' `i' 1
+	} 
+
 	foreach iv of local ind_vars_not_use_perc_kept {
 		use_lr REM `iv' `i' 0
 	} 
@@ -83,14 +94,6 @@ foreach i of numlist 1 2 {
 	foreach iv of local ind_vars_use_perc_kept {
 		use_lr non_REM `iv' `i' 1
 	} 
-
-	foreach iv of local ind_vars_not_use_perc_kept {
-		use_lr awake `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept {
-		use_lr awake `iv' `i' 1
-	} 
-
 }
 drop order_var
 program drop use_lr
