@@ -7,39 +7,58 @@ via taking the logistic regression and recording the coefficient and standard er
 */
 
 
-levelsof ID, local(idlist)
-
 *create function to calculate the logistic regression
 program define use_lr
     args dependent_variable independent_variable id use_perc_kept
 	
 	*create column names depending on the variables
-	local coeff_column_name "`dependent_variable'_`independent_variable'_coeff"
-	local se_column_name "`dependent_variable'_`independent_variable'_se"
+	local coeff_column_name "`independent_variable'_coeff"
+	local se_column_name "`independent_variable'_se"
 
 	capture gen `coeff_column_name' = .
 	capture gen `se_column_name' = .
 
 	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
 	if `use_perc_kept' == 1 {
-		    stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
+		    quiet stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
 	}
 	else {
-			stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
+			quiet stepwise, pr(0.2) pe(0.1): logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
 	}
 	
 	*the e(b) gets the coefficient matrix. This technically contains the se but it looks like the se is deleted after creation
 	*so, the e(V) matrix get the variance covariance matrix, which is used toget the se
 	matrix b = e(b)
 	matrix V = e(V)
-	
+		
     capture matrix tmp = b[1,"`dependent_variable':`independent_variable'"]
+	capture gen order_var = .
+	bysort ID: replace order_var = _n
+	
 	if _rc==0 {
-	    replace `coeff_column_name' = tmp[1,1] if ID==`id'
+		if "`dependent_variable'" == "awake"{
+			replace `coeff_column_name' = tmp[1,1] if ID==`id' & order_var == 1
+		}
+		if "`dependent_variable'" == "REM"{
+			replace `coeff_column_name' = tmp[1,1] if ID==`id' & order_var == 2
+
+		}
+		if "`dependent_variable'" == "non_REM"{
+			replace `coeff_column_name' = tmp[1,1] if ID==`id' & order_var == 3
+		}
 	}
     capture matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
 	if _rc==0 {
-	    replace `se_column_name' = sqrt(tmp[1,1]) if ID==`id'
+		if "`dependent_variable'" == "awake"{
+			replace `se_column_name' = sqrt(tmp[1,1]) if ID==`id' & order_var == 1
+		}
+		if "`dependent_variable'" == "REM"{
+			replace `se_column_name' = sqrt(tmp[1,1]) if ID==`id' & order_var == 2
+
+		}
+		if "`dependent_variable'" == "non_REM"{
+			replace `se_column_name' = sqrt(tmp[1,1]) if ID==`id' & order_var == 3
+		}
 	}
 end
 
@@ -50,7 +69,7 @@ local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow 
 local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_pow_m4w30r5 t_area qt_area t_amplitude
 
 *iterate through all indpenedent variables for awake, rem, and non-REM
-foreach i of local idlist {
+foreach i of numlist 1 2 {
 	foreach iv of local ind_vars_not_use_perc_kept {
 		use_lr REM `iv' `i' 0
 	} 
@@ -73,4 +92,5 @@ foreach i of local idlist {
 	} 
 
 }
+drop order_var
 program drop use_lr
