@@ -20,10 +20,10 @@ program define use_lr
 
 	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
 	if `use_perc_kept' == 1 {
-		    capture logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
+		logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
 	}
 	else {
-			capture logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
+		logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
 	}
 	
 	if _rc == 0 {
@@ -36,32 +36,15 @@ program define use_lr
 
 		local coeff = el(tmp, 1,1)
 		display `coeff'
-		if "`dependent_variable'" == "awake"{
-			replace `coeff_column_name' = `coeff' if ID==`id' & order_var==1
-		}
-		if "`dependent_variable'" == "REM"{
-			replace `coeff_column_name' = `coeff' if ID==`id' & order_var==2
-		}
-		if "`dependent_variable'" == "non_REM"{
-			replace `coeff_column_name' = `coeff' if ID==`id' & order_var==3
-		}
+		replace `coeff_column_name' = `coeff' if `dependent_variable' == 1
+
 		matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
 		local se = sqrt(el(tmp,1,1))
 		display `se'
-		if "`dependent_variable'" == "awake"{
-			replace `se_column_name' = `se' if ID==`id' & order_var==1
-		}
-		if "`dependent_variable'" == "REM"{
-			replace `se_column_name' = `se' if ID==`id' & order_var==2
+		replace `se_column_name' = `se' if `dependent_variable' == 1
 
-		}
-		if "`dependent_variable'" == "non_REM"{
-			replace `se_column_name' = `se' if ID==`id' & order_var==3
-		}
 	}
 end
-
-bysort ID: gen order_var = _n
 
 *these were the independent variables listed in the email which were not supposed to be filtered by perc_kept>85. There was no rmssd_msec so I used rmssd instead, and there was no rr_en_m4w50r5 so I left it out
 local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox rr_en_m4w30r5 rr_en_pow_m4w30r5 qrs_area rs_amplitude_abs
@@ -69,28 +52,29 @@ local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow 
 *these were the independent variables listed in the email which were supposed to be filtered by perc_kept>85. qt_en_m4w50r5 was left out because it was not found in the dataset
 local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_pow_m4w30r5 t_area qt_area t_amplitude
 
+
+capture gen mark = .
 *iterate through all indpenedent variables for awake, rem, and non-REM
-forvalues i = 2/10 {
-	foreach iv of local ind_vars_not_use_perc_kept {
+forvalues i = 1/3 {
+	foreach iv of local ind_vars_not_use_perc_kept{
 		use_lr awake `iv' `i' 0
 	} 
-	foreach iv of local ind_vars_use_perc_kept {
+	foreach iv of local ind_vars_use_perc_kept{
 		use_lr awake `iv' `i' 1
 	} 
 
-	foreach iv of local ind_vars_not_use_perc_kept {
+	foreach iv of local ind_vars_not_use_perc_kept{
 		use_lr REM `iv' `i' 0
 	} 
-	foreach iv of local ind_vars_use_perc_kept {
+	foreach iv of local ind_vars_use_perc_kept{
 		use_lr REM `iv' `i' 1
-	} 
-	
-	foreach iv of local ind_vars_not_use_perc_kept {
+	}
+	foreach iv of local ind_vars_not_use_perc_kept{
 		use_lr non_REM `iv' `i' 0
 	} 
-	foreach iv of local ind_vars_use_perc_kept {
+	foreach iv of local ind_vars_use_perc_kept{
 		use_lr non_REM `iv' `i' 1
 	} 
 }
-drop order_var
+
 program drop use_lr
