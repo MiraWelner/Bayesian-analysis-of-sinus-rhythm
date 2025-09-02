@@ -8,41 +8,46 @@ via taking the logistic regression and recording the coefficient and standard er
 
 
 *create function to calculate the logistic regression
+capture program drop use_lr
 program define use_lr
     args dependent_variable independent_variable id use_perc_kept
-	
-	*create column names depending on the variables
+    	*create column names depending on the variables
 	local coeff_column_name "`independent_variable'_coeff"
 	local se_column_name "`independent_variable'_se"
-
 	capture gen `coeff_column_name' = .
 	capture gen `se_column_name' = .
-
-	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
-	if `use_perc_kept' == 1 {
-		logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
-	}
-	else {
-		logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
-	}
+    
+    	* check outcome variation first
+	count if ID==`id' & label_one>4 & label_one<8 & perc_PVC<1 & `dependent_variable' == 1
+	local n1 = r(N)
+	count if ID==`id' & label_one>4 & label_one<8 & perc_PVC<1 & `dependent_variable' == 0
+	local n0 = r(N)
 	
-	if _rc == 0 {
+	if `n0'>0 & `n1'>0 {
+
+		*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
+		if `use_perc_kept' == 1 {
+			capture logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
+		}
+		else {
+			capture logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
+		}
+		
 		*the e(b) gets the coefficient matrix. This technically contains the se but it looks like the se is deleted after creation
 		*so, the e(V) matrix get the variance covariance matrix, which is used toget the se
-		matrix b = e(b)
-		matrix V = e(V)
-			
-		matrix tmp = b[1,"`dependent_variable':`independent_variable'"]	
+		if _rc==0{
+			matrix b = e(b)
+			matrix V = e(V)
+				
+			matrix tmp = b[1,"`dependent_variable':`independent_variable'"]	
 
-		local coeff = el(tmp, 1,1)
-		display `coeff'
-		replace `coeff_column_name' = `coeff' if `dependent_variable' == 1
+			local coeff = el(tmp, 1,1)
+			replace `coeff_column_name' = `coeff' if `dependent_variable' == 1 & ID==`id'
 
-		matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
-		local se = sqrt(el(tmp,1,1))
-		display `se'
-		replace `se_column_name' = `se' if `dependent_variable' == 1
-
+			matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
+			local se = sqrt(el(tmp,1,1))
+			replace `se_column_name' = `se' if `dependent_variable' == 1 & ID==`id'
+		}
 	}
 end
 
@@ -55,26 +60,42 @@ local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w
 
 capture gen mark = .
 *iterate through all indpenedent variables for awake, rem, and non-REM
-forvalues i = 1/3 {
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr awake `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
-		use_lr awake `iv' `i' 1
-	} 
+quietly summarize ID
+local max_id = r(max)
+local batch_size = 100
 
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr REM `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
-		use_lr REM `iv' `i' 1
+forvalues start = 1(`batch_size')`max_id' {
+	local end = `start' + `batch_size' - 1
+	if `end' > `max_id' local end = `max_id'
+
+	frame copy default batch_`start'_to_`end'
+	frame change batch_`start'_to_`end'
+	
+	* keep all rows for these 100 IDs
+	keep if ID >= `start' & ID <= `end'
+	
+	* run regressions for each ID in this frame
+	levelsof ID, local(batch_ids)
+	foreach id of local batch_ids {
+		foreach iv of local ind_vars_not_use_perc_kept{
+			use_lr awake `iv' `id' 0
+		} 
+		foreach iv of local ind_vars_use_perc_kept{
+			use_lr awake `iv' `id' 1
+		}
+		foreach iv of local ind_vars_not_use_perc_kept{
+			use_lr REM `iv' `id' 0
+		} 
+		foreach iv of local ind_vars_use_perc_kept{
+			use_lr REM `iv' `id' 1
+		}
+		foreach iv of local ind_vars_not_use_perc_kept{
+			use_lr non_REM `iv' `id' 0
+		} 
+		foreach iv of local ind_vars_use_perc_kept{
+			use_lr non_REM `iv' `id' 1
+		}
 	}
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr non_REM `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
-		use_lr non_REM `iv' `i' 1
-	} 
+	frame save "batch_`start'_to_`end'", replace
 }
-
-program drop use_lr
+frame change default
