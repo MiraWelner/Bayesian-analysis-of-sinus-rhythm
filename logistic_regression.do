@@ -51,29 +51,38 @@ local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow 
 *these were the independent variables listed in the email which were supposed to be filtered by perc_kept>85. qt_en_m4w50r5 was left out because it was not found in the dataset
 local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_pow_m4w30r5 t_area qt_area t_amplitude
 
-
 capture gen mark = .
 *iterate through all indpenedent variables for awake, rem, and non-REM
-forvalues i = 1/3 {
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr awake `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
-		use_lr awake `iv' `i' 1
-	} 
-
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr REM `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
-		use_lr REM `iv' `i' 1
-	}
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr non_REM `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
-		use_lr non_REM `iv' `i' 1
-	} 
+quietly summarize ID
+local max_id = 5528
+local batch_size = 100
+local nframes = 56
+* Loop over batches
+local my_frames
+forvalues i = 1/`nframes' {
+	local my_frames "`my_frames' frame`i'"
+	frame change default
 }
-
+capture frame create results_frame
+capture gen long frame_location_id = _n
+local framecount = 0
+foreach f of local my_frames {
+	frame change `f'
+	local framecount = `framecount' + 1
+	local start = `framecount' * `batch_size' + 1
+	local stop  = (`framecount' + 1) * `batch_size'
+	forvalues i = `start'/`stop' {
+		foreach iv of local ind_vars_not_use_perc_kept{
+			use_lr awake `iv' `i' 0
+			use_lr REM `iv' `i' 0
+			use_lr non_REM `iv' `i' 0
+		} 
+		foreach iv of local ind_vars_use_perc_kept{
+			use_lr awake `iv' `i' 1
+			use_lr REM `iv' `i' 1
+			use_lr non_REM `iv' `i' 1
+		}
+	}
+	
+}
 program drop use_lr
