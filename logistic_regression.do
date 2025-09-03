@@ -21,10 +21,10 @@ program define use_lr
 
 	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
 	if `use_perc_kept' == 1 {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
+		quiet capture logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
 	}
 	else {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
+		quiet capture logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
 	}
 	
 	if _rc == 0 {
@@ -34,7 +34,6 @@ program define use_lr
 		matrix V = e(V)
 			
 		matrix tmp = b[1,"`dependent_variable':`independent_variable'"]	
-
 		local coeff = el(tmp, 1,1)
 		replace `coeff_column_name' = `coeff' if `dependent_variable' == 1 & ID == `id'
 
@@ -54,24 +53,16 @@ local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w
 
 capture gen mark = .
 *iterate through all indpenedent variables for awake, rem, and non-REM
-forvalues i = 1/3 {
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr awake `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
-		use_lr awake `iv' `i' 1
-	} 
-
+forvalues i = 1/5524 {
 	foreach iv of local ind_vars_not_use_perc_kept{
 		use_lr REM `iv' `i' 0
+		use_lr awake `iv' `i' 0
+		use_lr non_REM `iv' `i' 0
+
 	} 
 	foreach iv of local ind_vars_use_perc_kept{
 		use_lr REM `iv' `i' 1
-	}
-	foreach iv of local ind_vars_not_use_perc_kept{
-		use_lr non_REM `iv' `i' 0
-	} 
-	foreach iv of local ind_vars_use_perc_kept{
+		use_lr awake `iv' `i' 1
 		use_lr non_REM `iv' `i' 1
 	} 
 }
