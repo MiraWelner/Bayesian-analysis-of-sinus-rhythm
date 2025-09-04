@@ -53,9 +53,9 @@ local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w
 
 *iterate through all indpenedent variables for awake, rem, and non-REM
 quietly summarize ID
-local max_id = 34
-local batch_size = 20
-local nframes = 2
+local max_id = 5528
+local batch_size = 100
+local nframes = 56
 
 frame change default
 
