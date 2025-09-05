@@ -21,10 +21,10 @@ program define use_lr
 
 	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
 	if `use_perc_kept' == 1 {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
+		quiet capture logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
 	}
 	else {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
+		quiet capture logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
 	}
 	
 	if _rc == 0 {
@@ -34,7 +34,6 @@ program define use_lr
 		matrix V = e(V)
 			
 		matrix tmp = b[1,"`dependent_variable':`independent_variable'"]	
-
 		local coeff = el(tmp, 1,1)
 		replace `coeff_column_name' = `coeff' if `dependent_variable' == 1 & ID == `id'
 
@@ -52,12 +51,11 @@ local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow 
 local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_pow_m4w30r5 t_area qt_area t_amplitude
 
 *iterate through all indpenedent variables for awake, rem, and non-REM
+
 quietly summarize ID
 local max_id = 5528
 local batch_size = 100
 local nframes = 56
-
-frame change default
 
 forvalues g = 0/`=`nframes'-1' {
 	capture frame drop temp
