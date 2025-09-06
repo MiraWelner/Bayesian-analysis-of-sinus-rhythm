@@ -45,6 +45,7 @@ program define use_lr
 	}
 end
 * generate new ID if needed
+drop if missing(REM) | missing(non_REM)
 *capture gen new_id = .
 *replace new_id = (idno !=idno[_n-1])
 *replace new_id = sum(new_id)
