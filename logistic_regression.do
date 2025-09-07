@@ -46,9 +46,9 @@ program define use_lr
 end
 * generate new ID if needed
 drop if missing(REM) | missing(non_REM)
-*capture gen new_id = .
-*replace new_id = (idno !=idno[_n-1])
-*replace new_id = sum(new_id)
+capture gen new_id = .
+replace new_id = (idno !=idno[_n-1])
+replace new_id = sum(new_id)
 *these were the independent variables listed in the email which were not supposed to be filtered by perc_kept>85. There were no rr_en_m4w30r5, qrs_area, rr_en_pow_m4w30r5, rs_amplitude_abs, or rr_en_m4w50r5 so I left them out
 local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd_msec vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox rr_en_m4w30r5
 
