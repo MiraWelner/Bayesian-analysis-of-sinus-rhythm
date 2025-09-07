@@ -1,9 +1,11 @@
 /*
-logistic_regression.do
+logistic_regression_SSH.do
 Mira Welner
-August 2025
+September 2025
 This .do file calculates the relevance of various data points to whether a patient is asleep, in REM sleep, or non-REM sleep. It does this
 via taking the logistic regression and recording the coefficient and standard error.
+
+It is designed for the SHHS dataset and is almost identical to the one for the MESA dataset (logistic_regression_MESA.do) with a few important changes
 */
 
 
@@ -21,10 +23,10 @@ program define use_lr
 
 	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
 	if `use_perc_kept' == 1 {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&new_id==`id' & label_one>4 & label_one<8
+		quiet capture logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&ID==`id' & label_one>4 & label_one<8
 	}
 	else {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&new_id==`id' & label_one>4 & label_one<8
+		quiet capture logit `dependent_variable' `independent_variable' if perc_PVC<1&ID==`id' & label_one>4 & label_one<8
 	}
 	
 	if _rc == 0 {
@@ -34,43 +36,37 @@ program define use_lr
 		matrix V = e(V)
 			
 		matrix tmp = b[1,"`dependent_variable':`independent_variable'"]	
-
 		local coeff = el(tmp, 1,1)
-		replace `coeff_column_name' = `coeff' if `dependent_variable' == 1 & new_id == `id'
+		replace `coeff_column_name' = `coeff' if `dependent_variable' == 1 & ID == `id'
 
 		matrix tmp = V["`dependent_variable':`independent_variable'","`dependent_variable':`independent_variable'"]
 		local se = sqrt(el(tmp,1,1))
-		replace `se_column_name' = `se' if `dependent_variable' == 1 & new_id==`id'
+		replace `se_column_name' = `se' if `dependent_variable' == 1 & ID==`id'
 
 	}
 end
-* generate new ID if needed
-drop if missing(REM) | missing(non_REM)
-capture gen new_id = .
-replace new_id = (idno !=idno[_n-1])
-replace new_id = sum(new_id)
-*these were the independent variables listed in the email which were not supposed to be filtered by perc_kept>85. There were no rr_en_m4w30r5, qrs_area, rr_en_pow_m4w30r5, rs_amplitude_abs, or rr_en_m4w50r5 so I left them out
-local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd_msec vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox rr_en_m4w30r5
 
-*these were the independent variables listed in the email which were supposed to be filtered by perc_kept>85. qt_en_m4w50r5, qt_en_m4w30r5, qt_en_pow_m4w30r5, t_amplitude, t_area, qt_area and qtv were left out because it was not found in the dataset
-local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtvi
+*these were the independent variables listed in the email which were not supposed to be filtered by perc_kept>85. There was no rmssd_msec so I used rmssd instead, and there was no rr_en_m4w50r5 so I left it out
+local ind_vars_not_use_perc_kept heart_rate sdnn meannn_msec rmssd vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox rr_en_m4w30r5 rr_en_pow_m4w30r5 qrs_area rs_amplitude_abs
+
+*these were the independent variables listed in the email which were supposed to be filtered by perc_kept>85. qt_en_m4w50r5 was left out because it was not found in the dataset
+local ind_vars_use_perc_kept meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_pow_m4w30r5 t_area qt_area t_amplitude
 
 *iterate through all indpenedent variables for awake, rem, and non-REM
-quietly summarize new_id
-local max_id = 2050
-local batch_size = 100
-local nframes = 21
 
-frame change default
+quietly summarize ID
+local max_id = 5528
+local batch_size = 100
+local nframes = 56
 
 forvalues g = 0/`=`nframes'-1' {
 	capture frame drop temp
 	local start_id = `g'*`batch_size'
 	local end_id `=min((`g'+1)*`batch_size', `max_id')'
 	display `end_id'
-	frame put if (new_id>`start_id') & (new_id <= `end_id'), into(temp)
+	frame put if (ID>`start_id') & (ID <= `end_id'), into(temp)
 	frame change temp
-	quietly summarize new_id
+	quietly summarize ID
 	local start = r(min)
 	local stop = r(max)
 	forvalues i = `start'/`stop' {
