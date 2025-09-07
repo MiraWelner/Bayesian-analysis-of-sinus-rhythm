@@ -1,9 +1,11 @@
 /*
-logistic_regression.do
+logistic_regression_SSH.do
 Mira Welner
-August 2025
+September 2025
 This .do file calculates the relevance of various data points to whether a patient is asleep, in REM sleep, or non-REM sleep. It does this
 via taking the logistic regression and recording the coefficient and standard error.
+
+It is designed for the SHHS dataset and is almost identical to the one for the MESA dataset (logistic_regression_MESA.do) with a few important changes
 */
 
 

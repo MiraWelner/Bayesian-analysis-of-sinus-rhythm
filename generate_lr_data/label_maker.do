@@ -1,10 +1,15 @@
 //30-sec bin during final waking from sleep — you will need to determine this for each person by looking backwards from the max value of timefromepochbegin_tosleeponset_ until the sleep state changes from awake to REM or non-REM and label that last sleep state of REM or non-REM as during final waking from sleep.
-bysort shhs_id: egen final_waking_from_sleep = max((_n)*(awake==0))
-bysort shhs_id: gen final_woken = 1 if _n >= final_waking_from_sleep
-replace final_woken = 0 if missing(final_woken)
 
+drop if missing(awake) | missing(REM) | missing(non_REM)
+
+
+bysort MESA_id: egen final_waking_from_sleep = max((_n)*(awake==0))
+bysort MESA_id: gen final_woken = 1 if _n >= final_waking_from_sleep
+capture gen final_woken = .
+replace final_woken = 0 if missing(final_woken)
+capture gen label_one = . 
 //30-sec bin of non-REM sleep (i.e., non_REM==1)
-gen label_one=6 if (non_REM==1)
+replace label_one=6 if (non_REM==1)
 
 //30-sec bin of REM sleep (i.e., REM==1)
 replace label_one=7 if (REM==1)
@@ -25,12 +30,13 @@ replace label_one=4 if (timefromepochbegin_tosleeponset_ > 0) & (timefromepochbe
 replace label_one=5 if (timefromepochbegin_tosleeponset_ > 0) & (final_woken == 0) & (awake==1)
 
 //30-sec bin just before the final waking from sleep
-bysort shhs_id: replace label_one = 8 if _n == final_waking_from_sleep-1
-bysort shhs_id: replace label_one = 9 if _n == final_waking_from_sleep
-bysort shhs_id: replace label_one = 10 if _n == final_waking_from_sleep+1
-bysort shhs_id: replace label_one = 11 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
-bysort shhs_id: gen label_two = 12 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
-bysort shhs_id: replace label_one = 12 if _n >= final_waking_from_sleep+10
+bysort MESA_id: replace label_one = 8 if _n == final_waking_from_sleep-1
+bysort MESA_id: replace label_one = 9 if _n == final_waking_from_sleep
+bysort MESA_id: replace label_one = 10 if _n == final_waking_from_sleep+1
+bysort MESA_id: replace label_one = 11 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
+capture gen label_two = .
+bysort MESA_id: replace label_two = 12 if (_n > final_waking_from_sleep+1) & (_n < final_waking_from_sleep+10)
+bysort MESA_id: replace label_one = 12 if _n >= final_waking_from_sleep+10
 
 drop final_woken
 drop final_waking_from_sleep
