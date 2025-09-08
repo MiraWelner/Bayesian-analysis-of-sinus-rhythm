@@ -17,7 +17,7 @@ program define plot_distribution
 				local graphlist_awake "`graphlist_awake' hist`i'"
 			}
 		}
-		graph combine `graphlist_awake',title("Heart Rate Coefficients when Awake")
+		graph combine `graphlist_awake',title("Heart Rate Coefficients when Awake") xcommon
 		graph export "awake_`distinguishing_feature'.png", replace
 		
 		
@@ -30,7 +30,7 @@ program define plot_distribution
 				local graphlist_nonREM "`graphlist_nonREM' hist`i'"
 			}
 		}
-		graph combine `graphlist_nonREM',  title("Heart Rate Coefficients when in non-REM")
+		graph combine `graphlist_nonREM',  title("Heart Rate Coefficients when in non-REM") xcommon
 		graph export "nonREM_`distinguishing_feature'.png", replace
 		
 		
@@ -43,12 +43,12 @@ program define plot_distribution
 				local graphlist_REM "`graphlist_REM' hist`i'"
 			}
 		}
-		graph combine `graphlist_REM',  title("Heart Rate Coefficients when in REM")
+		graph combine `graphlist_REM',  title("Heart Rate Coefficients when in REM") xcommon
 		graph export "REM_`distinguishing_feature'.png", replace
 		
 end
 		
-plot_distribution heart_rate_coeff gender1 1
-plot_distribution heart_rate_coeff race1c 4
+plot_distribution heart_rate_norm_coeff gender1 1
+plot_distribution heart_rate_norm_coeff race1c 4
 xtile agequartile = age5c, nq(4)
-quietly plot_distribution heart_rate_coeff agequartile 4
+quietly plot_distribution heart_rate_norm_coeff agequartile 4

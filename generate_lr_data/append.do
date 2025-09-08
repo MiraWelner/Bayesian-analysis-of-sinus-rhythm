@@ -5,4 +5,4 @@ forvalues i = 1/20 {
     append using frame`i'.dta
 }
 
-save all_frames_MESA.dta, replace
+save welner_MESA-normalized-lr_september-8.dta, replace
