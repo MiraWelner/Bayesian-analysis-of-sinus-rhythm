@@ -1,0 +1,2 @@
+use condition if perc_PVC<0.1 for the following:  heart_rate sdnn meannn_msec rmssd_msec vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox rr_en_m4w30r5 rr_en_m4w50r5 rr_en_pow_m4w30r5 rr_en_pow_m4w50r5 qrs_area rs_amplitude_abs     
+use condition if perc_PVC<0.1 & perc_kept>85 for the following:  meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv qt_en_m4w30r5 qt_en_m4w50r5 qt_en_pow_m4w30r5 qt_en_pow_m4w50r5 t_area qt_area t_amplitude

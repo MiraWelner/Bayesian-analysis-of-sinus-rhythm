@@ -11,6 +11,7 @@ Do the initial analysis required for every dataset listed here:
 
 ssc install mdesc
 
+local original heart_rate sdnn meannn_msec rmssd_msec vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox meancoh qtvi qt qtc qtrrslope qtrr_r2 qtvi
 
 local coefficients heart_rate_norm_coeff sdnn_norm_coeff meannn_msec_norm_coeff rmssd_msec_norm_coeff vlfpow_norm_coeff lfpow_norm_coeff hfpow_norm_coeff LF_norm_coeff HF_norm_coeff VLF_norm_coeff lfdivhfpow_norm_coeff totpow_clin_norm_coeff mean_pulseox_norm_coeff median_pulseox_norm_coeff stdev_pulseox_norm_coeff meancoh_norm_coeff qtvi_norm_coeff qt_norm_coeff qtc_norm_coeff qtrrslope_norm_coeff qtrr_r2_norm_coeff qtvi_norm_coeff
 
@@ -35,7 +36,19 @@ foreach i of local norms {
 graph combine `histogram_names_norms', title("Histograms of Norms")
 graph export "norm_hists.png", replace
 
+local histogram_names_original
+foreach i of local original {
+	hist `i', name(g_`i', replace) title("`i'") bins(200)
+	local histogram_names_original `histogram_names_original' g_`i'
+}
+
+graph combine `histogram_names_original', title("Histograms of Original Values")
+graph export "original_hists.png", replace
+
+
 mdesc `coefficients'
 mdesc `norms'
+mdesc `original'
 summarize `coefficients'
 summarize `norms'
+summarize `original'

@@ -1,7 +1,7 @@
 /*
 logistic_regression_MESA.do
 Mira Welner
-August 2025
+September 2025
 This .do file calculates the relevance of various data points to whether a patient is asleep, in REM sleep, or non-REM sleep. It does this
 via taking the logistic regression and recording the coefficient and standard error.
 
@@ -25,10 +25,10 @@ program define use_lr
 
 	*some of the variables need to be filtered by perc_kept > 85, this if/else provides the filtering
 	if `use_perc_kept' == 1 {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&new_id==`id' & label_one>4 & label_one<8
+		logit `dependent_variable' `independent_variable' if perc_PVC<1&perc_kept>85&new_id==`id' & is_valid_data==1
 	}
 	else {
-		quietly logit `dependent_variable' `independent_variable' if perc_PVC<1&new_id==`id' & label_one>4 & label_one<8
+		logit `dependent_variable' `independent_variable' if perc_PVC<1&new_id==`id'  & is_valid_data==1
 	}
 	
 	if _rc == 0 {
@@ -49,7 +49,7 @@ program define use_lr
 	}
 end
 * generate new ID if for MESA dataset since it doesn't have IDs automatically
-drop if missing(REM) | missing(non_REM)
+drop if missing(REM) | missing(non_REM) |  mod(REM, 1) != 0  | mod(non_REM, 1) != 0 | mod(awake, 1) != 0
 capture gen new_id = .
 replace new_id = (idno !=idno[_n-1])
 replace new_id = sum(new_id)
@@ -71,7 +71,7 @@ local ind_vars_use_perc_kept meancoh_norm qtvi_norm qt_norm qtc_norm qtrrslope_n
 
 *iterate through all indpenedent variables for awake, rem, and non-REM
 quietly summarize new_id
-local max_id = 2050
+local max_id = 2003
 local batch_size = 100
 local nframes = 21
 
