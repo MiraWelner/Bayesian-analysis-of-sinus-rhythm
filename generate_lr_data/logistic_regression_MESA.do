@@ -103,3 +103,10 @@ forvalues g = 0/`=`nframes'-1' {
 	save "`savefile'", replace
 	frame change default
 }
+
+use frame0.dta, clear
+forvalues i = 1/20 {
+    append using frame`i'.dta
+}
+save welner_MESA-consolidated-normalized-lr_september-11_version1.dta, replace
+

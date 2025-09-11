@@ -194,4 +194,4 @@ quietly local keyvar = `'"`keyvar2'"'
 	// graph export kd_combined_1.png, as(png) replace
 	
 //graph combine kd_age kd_FRS kd_chadsvasc kd_charge_AF kd_DeepEntropy4 kd_CAFS, rows(2) cols(3) name(kd_combined, replace) imargin(small) xsize(6) ysize(4) 
-//capture graph export kd_combined.png, as(png) replace
+	capture graph export kd_combined.png, as(png) replace

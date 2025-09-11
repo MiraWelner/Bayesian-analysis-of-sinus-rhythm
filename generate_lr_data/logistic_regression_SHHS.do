@@ -46,7 +46,7 @@ program define use_lr
 	}
 end
 
-* qrs_area rs_amplitude_abs t_area qt_area t_amplitude
+* qrs_area rs_amplitude_abs t_area qt_area t_amplitude were not found in the dataset 
 * qtv -> qtv_msecsqu
 local vars_to_normalize heart_rate sdnn meannn_msec rmssd_msec vlfpow lfpow hfpow LF HF VLF lfdivhfpow totpow_clin mean_pulseox median_pulseox stdev_pulseox rr_en_m4w30r5 rr_en_m4w50r5 rr_en_pow_m4w30r5 rr_en_pow_m4w50r5 meancoh qtvi qt qtc qtrrslope qtrr_r2 qtv_msecsqu qt_en_m4w30r5 qt_en_m4w50r5 qt_en_pow_m4w30r5 qt_en_pow_m4w50r5
 
@@ -97,3 +97,10 @@ forvalues g = 0/`=`nframes'-1' {
 	save "`savefile'", replace
 	frame change default
 }
+
+use frame0.dta, clear
+forvalues i = 1/64 {
+    append using frame`i'.dta
+}
+save welner_SHHS1-consolidated-normalized-lr_september-11_version2.dta, replace
+
